@@ -1,26 +1,21 @@
 import os
 import csv
-from operator import itemgetter
-
-
-#
-# def read_image(image_name):
-#     image = imageio.imread(image_name)
-#     if len(image.shape) > 2:
-#         image = image[:, :, 0]
-#     return image
+import imageio
+from skimage.measure import block_reduce
+import numpy as np
 
 
 class ChestDataset:
     """Dataset class to manipulate data
     WARNING: it does not return images ! """
 
-    def __init__(self, data_dir, list_file):
+    def __init__(self, data_dir, list_file, reduce_size=None):
         image_names = []
         labels = []
         ages = []
         followup = []
         gender = []
+        self.reduce = reduce_size
 
         with open(list_file, 'r') as f:
             self.reader = csv.DictReader(f)
@@ -53,10 +48,6 @@ class ChestDataset:
         for index in range(len(self)):
             yield self[index]
 
-    def get_all(self):
-        return dict(image_name=self.image_names, label=self.labels, gender=self.gender, followup=self.followup,
-                    ages=self.ages)
-
     def filterby(self, filter):
         if not type(filter) == str:
             raise TypeError('filter arg should be a string')
@@ -70,3 +61,14 @@ class ChestDataset:
         return dict(image_name=image_names, label=labels, gender=gender,
                     followup=followup,
                     ages=ages)
+
+    def fetch(self, index):
+        if self.reduce is None:
+            image = imageio.imread(self.image_names[index])
+        else:
+            image = block_reduce(imageio.imread(self.image_names[index]), block_size=(self.reduce, self.reduce),
+                                 func=np.mean)
+        if len(image.shape) > 2:
+            image = image[:, :, 0]
+
+        return image
