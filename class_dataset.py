@@ -22,7 +22,7 @@ class ChestDataset:
 
         if isinstance(list_file, pd.DataFrame):
             self.reader = list_file
-            image_path = list(self.reader['Image Index'])
+            image_path = [os.path.join(self.dir, x) for x in self.reader['Image Index']]
             labels = list(self.reader['Finding Labels'])
             ages = list(self.reader['Patient Age'])
             followup = list(self.reader['Follow-up #'])
@@ -74,6 +74,12 @@ class ChestDataset:
         return dict(image_path=image_path, label=labels, gender=gender,
                     followup=followup,
                     ages=ages)
+
+    def filterby_obj(self, filter):
+        if not isinstance(self.reader, pd.DataFrame):
+            raise TypeError('Cannot use filterby_obj method if initialized with csv, initialize with dataframe instead')
+        new_list = self.reader[self.reader['Finding Labels'] == filter]
+        return ChestDataset(self.dir, new_list, self.reduce)
 
     def fetch(self, index):
         if self.reduce is None:
