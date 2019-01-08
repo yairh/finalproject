@@ -143,8 +143,8 @@ class ChestDataset:
             os.rename(path, new_path)
 
     def reset_folder(self):
-        for folder in glob.glob(os.path.join(self.dir, '*/')):
-            for files in glob.glob(os.path.join(folder, '*')):
+        for folder in glob.glob(os.path.join(self.dir, '**/**/')):
+            for files in glob.glob(os.path.join(folder, '*.png')):
                 file = files.replace(folder, '')
                 new_path = os.path.join(self.dir, file)
                 os.rename(files, new_path)
