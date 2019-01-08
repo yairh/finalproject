@@ -42,6 +42,7 @@ sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
 NAME = 'Binary_chest_cnn_64x3_{}'.format(int(time.time()))
 tensorboard = TensorBoard(log_dir='logs/{}'.format(NAME))
 
+
 def to_net(path_to_img):
     train_path = os.path.join(path_to_img, 'train')
     test_path = os.path.join(path_to_img, 'test')
