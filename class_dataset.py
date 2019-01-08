@@ -103,3 +103,19 @@ class ChestDataset:
                 warnings.warn('Image not found in folder')
                 continue
 
+    def train_test(self, train_list, test_list):
+        train_dataset = ChestDataset(self.dir, train_list, self.reduce)
+        test_dataset = ChestDataset(self.dir, test_list, self.reduce)
+
+        train_path = os.path.join(self.dir, 'train')
+        test_path = os.path.join(self.dir, 'test')
+        os.mkdir(train_path)
+        os.mkdir(test_path)
+
+        for path in train_dataset.image_path:
+            new_path = os.path.join(train_path, path.replace(self.dir, ''))
+            os.rename(path, new_path)
+
+        for path in test_dataset.image_path:
+            new_path = os.path.join(test_path, path.replace(self.dir, ''))
+            os.rename(path, new_path)
