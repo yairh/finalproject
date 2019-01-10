@@ -149,3 +149,7 @@ class ChestDataset:
                 new_path = os.path.join(self.dir, file)
                 os.rename(files, new_path)
             os.rmdir(folder)
+        if os.path.exists(os.path.join(self.dir,'train/')):
+            os.rmdir(os.path.join(self.dir,'train/'))
+        if os.path.exists(os.path.join(self.dir,'test/')):
+            os.rmdir(os.path.join(self.dir,'test/')) 
