@@ -1,6 +1,6 @@
 import os
 import csv
-import imageio
+# import imageio
 from skimage.measure import block_reduce
 import numpy as np
 import warnings
@@ -89,19 +89,19 @@ class ChestDataset:
         new_list = self.reader[self.reader[attribute] == filter]
         return ChestDataset(self.dir, new_list, self.reduce)
 
-    def fetch(self, index):
-        if not self.exists[index]:
-            raise FileNotFoundError(
-                'Image not found in physical folder, if you added it, please reinitialize Dataset object')
-        if self.reduce is None:
-            image = imageio.imread(self.image_path[index])
-        else:
-            image = block_reduce(imageio.imread(self.image_path[index]), block_size=(self.reduce, self.reduce),
-                                 func=np.mean)
-        if len(image.shape) > 2:
-            image = image[:, :, 0]
+#     def fetch(self, index):
+#         if not self.exists[index]:
+#             raise FileNotFoundError(
+#                 'Image not found in physical folder, if you added it, please reinitialize Dataset object')
+#         if self.reduce is None:
+#             image = imageio.imread(self.image_path[index])
+#         else:
+#             image = block_reduce(imageio.imread(self.image_path[index]), block_size=(self.reduce, self.reduce),
+#                                  func=np.mean)
+#         if len(image.shape) > 2:
+#             image = image[:, :, 0]
 
-        return image
+#         return image
 
     def create_tree(self):
         for el in range(len(self)):
