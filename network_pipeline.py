@@ -135,7 +135,7 @@ model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['ac
 
 tensorboard = TensorBoard(log_dir='output/logs', histogram_freq=0,
                           write_graph=True, write_images=False)
-filepath = "output/{}-{epoch:02d}-{val_acc:.2f}.hdf5".format(model_name)
+filepath = "output/checkpoint_{}.hdf5".format(model_name)
 checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
 # Train the model
