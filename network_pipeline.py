@@ -34,7 +34,7 @@ dataset = ChestDataset(data_dir,df_uni)
 train_list = [el[23:] for i,el in enumerate(dataset.image_path) if not i%5 == 0]
 test_list = [el[23:] for i,el in enumerate(dataset.image_path) if i%5 == 0]
 
-y_train = df_uni['Finding Labels'][df_uni['Finding Labels'].isin(test_list)]
+y_train = df_uni['Finding Labels'][df_uni['Image Index'].isin(test_list)]
 class_weights = class_weight.compute_class_weight('balanced',
                                                  np.unique(y_train),
                                                  y_train)
@@ -77,7 +77,7 @@ img_width,img_height = 256,256
 densenet = DenseNet121(weights='imagenet', include_top=False,input_shape = (img_width, img_height, 3))
 
 # # Freeze some layers
-for layer in densenet.layers[100:]:
+for layer in densenet.layers[:100]:
     layer.trainable = False
     
 # Create the model
@@ -124,7 +124,7 @@ validation_generator = validation_datagen.flow_from_directory(
     shuffle=False)
 
 # Compile the model
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 tensorboard = TensorBoard(log_dir='./logs', histogram_freq=0,
                           write_graph=True, write_images=False)
