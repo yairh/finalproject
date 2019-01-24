@@ -12,13 +12,16 @@ import numpy as np
 from sklearn.utils import class_weight
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
+import os
 
 print(device_lib.list_local_devices())
 print(K.tensorflow_backend._get_available_gpus())
 get_ipython().system('sudo chown -R ds:ds /data')
 
+os.mkdir('output')
+
 # CHOOSE now your model name 
-model_name = 'densechest100'
+model_name = 'densechest_lrdown_full_softmax'
 
 csvfile = 'data_kaggle/Data_Entry_2017.csv'
 df = pd.read_csv(csvfile)
@@ -188,7 +191,9 @@ y_true[np.arange(preds.shape[0]), validation_generator.classes] = 1
 inv_map = {v:k for k,v in validation_generator.class_indices.items()}
 pred_cat = [inv_map[i] for i in preds]
 
-print(classification_report(validation_generator.classes,preds))
+report = classification_report(validation_generator.classes,preds)
+np.save('output/report_{}.npy'.format(model_name),report)
+print(report)
 print('Accuracy score: ',accuracy_score(validation_generator.classes,preds))
 
 score = model.evaluate_generator(validation_generator,
