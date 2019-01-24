@@ -11,10 +11,14 @@ from tensorflow.python.client import device_lib
 import numpy as np
 from sklearn.utils import class_weight
 import matplotlib.pyplot as plt
+from keras.optimizers import Adam
 
 print(device_lib.list_local_devices())
 print(K.tensorflow_backend._get_available_gpus())
 get_ipython().system('sudo chown -R ds:ds /data')
+
+# CHOOSE now your model name 
+model_name = 'densechest100'
 
 csvfile = 'data_kaggle/Data_Entry_2017.csv'
 df = pd.read_csv(csvfile)
@@ -31,19 +35,19 @@ df_uni = df_uni[df_uni.exists == True]
 
 dataset = ChestDataset(data_dir,df_uni)
 
-train_list = [el[23:] for i,el in enumerate(dataset.image_path) if not i%5 == 0]
-test_list = [el[23:] for i,el in enumerate(dataset.image_path) if i%5 == 0]
+train_list = [el[len(data_dir):] for i,el in enumerate(dataset.image_path) if not i%5 == 0]
+test_list = [el[len(data_dir):] for i,el in enumerate(dataset.image_path) if i%5 == 0]
 
 y_train = df_uni['Finding Labels'][df_uni['Image Index'].isin(test_list)]
 class_weights = class_weight.compute_class_weight('balanced',
                                                  np.unique(y_train),
                                                  y_train)
 
-with open('dense_train_list.txt', 'w') as f:
+with open('output/dense_train_list.txt', 'w') as f:
     for item in train_list:
         f.write("%s\n" % item)
 
-with open('dense_test_list.txt', 'w') as f:
+with open('output/dense_test_list.txt', 'w') as f:
     for item in test_list:
         f.write("%s\n" % item)
 
@@ -72,13 +76,12 @@ for lab in labels:
     print('# of %s: %.3f%%'%(lab,100*dataset.labels.count(lab)/len(dataset.labels)))
 
 # ADD YOUR MODEL
-model_name = 'densechest100'
 img_width,img_height = 256,256
 densenet = DenseNet121(weights='imagenet', include_top=False,input_shape = (img_width, img_height, 3))
 
 # # Freeze some layers
-for layer in densenet.layers[:100]:
-    layer.trainable = False
+# for layer in densenet.layers[:100]:
+#     layer.trainable = False
     
 # Create the model
 model = models.Sequential()
@@ -124,18 +127,19 @@ validation_generator = validation_datagen.flow_from_directory(
     shuffle=False)
 
 # Compile the model
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+optimizer = Adam(lr=0.0001)
+model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
-tensorboard = TensorBoard(log_dir='./logs', histogram_freq=0,
+tensorboard = TensorBoard(log_dir='output/logs', histogram_freq=0,
                           write_graph=True, write_images=False)
-filepath = "{}-{epoch:02d}-{val_acc:.2f}.hdf5".format(model_name)
+filepath = "output/{}-{epoch:02d}-{val_acc:.2f}.hdf5".format(model_name)
 checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
 # Train the model
 history = model.fit_generator(
     train_generator,
     steps_per_epoch=train_generator.samples // train_generator.batch_size,
-    epochs=10,
+    epochs=100,
     class_weight=class_weights,
     validation_data=validation_generator,
     validation_steps=validation_generator.samples // validation_generator.batch_size,
@@ -161,14 +165,14 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 # plt.show()
-fig.savefig('history_{}.png'.format(model_name))
+fig.savefig('output/history_{}.png'.format(model_name))
 
 # serialize model to JSON
 model_json = model.to_json()
-with open("{}.json".format(model_name), "w") as json_file:
+with open("output/{}.json".format(model_name), "w") as json_file:
     json_file.write(model_json)
 # serialize weights to HDF5
-model.save_weights("{}.h5".format(model_name))
+model.save_weights("output/{}.h5".format(model_name))
 print("Saved model to disk")
 
 prediction = model.predict_generator(validation_generator,
@@ -211,6 +215,6 @@ plt.ylabel('True Positive Rate')
 plt.title('ROC curve')
 plt.legend(loc="lower right")
 #plt.show()
-fig.savefig('roc_curve_{}.png'.format(model_name))
+fig.savefig('output/roc_curve_{}.png'.format(model_name))
 
 print('End Of Training')
