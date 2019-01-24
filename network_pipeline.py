@@ -142,7 +142,7 @@ checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_o
 history = model.fit_generator(
     train_generator,
     steps_per_epoch=train_generator.samples // train_generator.batch_size,
-    epochs=100,
+    epochs=20,
     class_weight=class_weights,
     validation_data=validation_generator,
     validation_steps=validation_generator.samples // validation_generator.batch_size,
