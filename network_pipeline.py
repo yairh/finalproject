@@ -147,7 +147,7 @@ history = model.fit_generator(
     validation_data=validation_generator,
     validation_steps=validation_generator.samples // validation_generator.batch_size,
     verbose=1,
-    callbacks=[tensorboard,checkpoint]
+    callbacks=[tensorboard,checkpoint],
     use_multiprocessing=True)
 
 
@@ -198,8 +198,7 @@ print('Accuracy score: ',accuracy_score(validation_generator.classes,preds))
 
 score = model.evaluate_generator(validation_generator,
                                  steps=len(validation_generator),
-                                 pickle_safe=True,
-                                 verbose=1)
+                                 pickle_safe=True)
 print('Accuracy Keras: ', score[1])
 
 # Auc scores
