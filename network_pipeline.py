@@ -16,7 +16,7 @@ import os
 
 print(device_lib.list_local_devices())
 print(K.tensorflow_backend._get_available_gpus())
-get_ipython().system('sudo chown -R ds:ds /data')
+os.system('sudo chown -R ds:ds /data')
 
 os.mkdir('output')
 
