@@ -1,5 +1,6 @@
 from class_dataset import ChestDataset
 import pandas as pd
+from keras.callbacks import TensorBoard, ModelCheckpoint
 from keras.layers import Dense, Activation, Conv2D, MaxPool2D, Flatten, BatchNormalization, Dropout
 from keras.preprocessing.image import ImageDataGenerator
 from keras import applications
@@ -125,6 +126,11 @@ validation_generator = validation_datagen.flow_from_directory(
 # Compile the model
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
+tensorboard = TensorBoard(log_dir='./logs', histogram_freq=0,
+                          write_graph=True, write_images=False)
+filepath = "{}-{epoch:02d}-{val_acc:.2f}.hdf5".format(model_name)
+checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
 # Train the model
 history = model.fit_generator(
     train_generator,
@@ -134,6 +140,7 @@ history = model.fit_generator(
     validation_data=validation_generator,
     validation_steps=validation_generator.samples // validation_generator.batch_size,
     verbose=1,
+    callbacks=[tensorboard,checkpoint]
     use_multiprocessing=True)
 
 
