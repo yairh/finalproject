@@ -20,8 +20,8 @@ import seaborn as sns
 
 print(device_lib.list_local_devices())
 print(K.tensorflow_backend._get_available_gpus())
-# os.system('sudo chown -R ds:ds /data')
-# os.mkdir('output')
+os.system('sudo chown -R ds:ds /data')
+os.mkdir('output')
 
 # CHOOSE now your model name 
 model_name = 'densechest_multilabel'
@@ -34,7 +34,7 @@ data_dir = '/data/xray_chest_final/'
 df = ChestDataset(data_dir,df).reader
 df = df[df.exists == True]
 
-df['Finding Labels'] = df['Finding Labels'].replace('No Finding','')
+df['Finding Labels'] = df['Finding Labels'].apply(lambda x: '' if x== 'No Finding' else x)
 df = df[df['Finding Labels'].isin(list(df['Finding Labels'].value_counts()[:14].index.values))]
 
 labels = list(df['Finding Labels'][~df['Finding Labels'].str.contains('\|')].unique())
@@ -43,10 +43,6 @@ labels.remove('')
 for label in labels:
     df[label] = df['Finding Labels'].map(lambda x: 1 if label in x else 0)
 df['disease_vec'] = df[labels].apply(lambda x: np.array(list(x)),axis=1)
-# df.head()
-
-# min_count = np.min(df_uni['Finding Labels'].value_counts())
-# df_rd = df_uni.groupby('Finding Labels',group_keys=False).apply(lambda df: df.sample(min_count))
 
 dataset = ChestDataset(data_dir,df)
 
@@ -60,12 +56,20 @@ class_weights = class_weight.compute_class_weight('balanced',
                                                  np.unique(y_train),
                                                  y_train)
 
+with open('output/{}_train_list.txt'.format(model_name), 'w') as f:
+    for item in train_list:
+        f.write("%s\n" % item)
+
+with open('output/{}_test_list.txt'.format(model_name), 'w') as f:
+    for item in test_list:
+        f.write("%s\n" % item)
+
 # ADD YOUR MODEL
 im_width,im_heigth = 256,256
 densenet = DenseNet121(weights='imagenet', include_top=False,input_shape = (im_width,im_heigth,3))
 
 # # Freeze some layers
-# for layer in densenet.layers[:100]:
+# for layer in densenet.layers[:60]:
 #     layer.trainable = False
     
 # Create the model
@@ -179,7 +183,6 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-# plt.show()
 fig.savefig('output/history_{}.png'.format(model_name))
 
 
@@ -223,7 +226,6 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('ROC curve')
 plt.legend(loc="lower right")
-#plt.show()
 fig.savefig('output/roc_curve_{}.png'.format(model_name))
 
 print('End Of Training')
