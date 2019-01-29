@@ -1,7 +1,7 @@
 import os
 import csv
 # import imageio
-from skimage.measure import block_reduce
+# from skimage.measure import block_reduce
 import numpy as np
 import warnings
 import pandas as pd
