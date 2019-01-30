@@ -119,7 +119,7 @@ class_weights = {train_generator.class_indices[k]:v for k,v in class_weights.ite
 
 
 # Compile the model
-optimizer = Adam(lr=0.0001)
+optimizer = Adam(lr=0.001)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
 tensorboard = TensorBoard(log_dir='output/logs', histogram_freq=0,
