@@ -42,6 +42,8 @@ with open(train_path,'r') as f:
 
 with open(test_path,'r') as f:
     test_list = f.read().split('\n')
+    
+dataset = ChestDataset(data_dir,df)
 
 train_dt,test_dt = dataset.train_test(train_list,test_list)
 train_dt.create_tree()
@@ -54,7 +56,7 @@ test_folder = test_dt.dir
 
 
 # ADD YOUR MODEL
-img_width,img_height = 300,300
+img_width,img_height = 256,256
 densenet = DenseNet121(weights='imagenet', include_top=False,input_shape = (img_width, img_height, 3))
 
 # # Freeze some layers
@@ -109,7 +111,10 @@ validation_generator = validation_datagen.flow_from_directory(
 optimizer = Adam()
 model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['acc'])
 weight_path = 'output/checkpoint_densechest_infilt.hdf5'
-model.load_weights(weight_path)
+try: 
+    model.load_weights(weight_path)
+except:
+    pass
 
 tensorboard = TensorBoard(log_dir='output/logs', histogram_freq=0,
                           write_graph=True, write_images=False)
