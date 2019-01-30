@@ -10,8 +10,9 @@ from keras import backend as K
 from tensorflow.python.client import device_lib
 import numpy as np
 from sklearn.utils import class_weight
-import matplotlib as plt
-plt.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 import os
 from itertools import chain
@@ -43,7 +44,8 @@ train_list = [el[len(data_dir):] for i,el in enumerate(dataset.image_path) if no
 test_list = [el[len(data_dir):] for i,el in enumerate(dataset.image_path) if i%5 == 0]
 class_weights = dict(df_uni.groupby('Finding Labels').count().exists/(len(df_uni)))
 
-
+for label in class_weights.keys():
+    class_weights[label] = max(class_weights.values())/class_weights[label]
 
 with open('output/{}_train_list.txt'.format(model_name), 'w') as f:
     for item in train_list:
@@ -119,12 +121,12 @@ class_weights = {train_generator.class_indices[k]:v for k,v in class_weights.ite
 
 
 # Compile the model
-optimizer = Adam(lr=0.001)
+optimizer = Adam()
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
-tensorboard = TensorBoard(log_dir='output/logs', histogram_freq=0,
-                          write_graph=True, write_images=False)
-filepath = "output/checkpoint_{}.hdf5".format(model_name)
+# tensorboard = TensorBoard(log_dir='output/logs', histogram_freq=0,
+#                           write_graph=True, write_images=False)
+# filepath = "output/checkpoint_{}.hdf5".format(model_name)
 checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
 # Train the model
@@ -135,8 +137,8 @@ history = model.fit_generator(
     class_weight=class_weights,
     validation_data=validation_generator,
     validation_steps=len(validation_generator),
-    verbose=1,
-    callbacks=[tensorboard,checkpoint])
+    verbose=2,
+    callbacks=[checkpoint])
 
 model_json = model.to_json()
 with open("output/{}.json".format(model_name), "w") as json_file:
