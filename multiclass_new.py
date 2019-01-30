@@ -10,8 +10,7 @@ from keras import backend as K
 from tensorflow.python.client import device_lib
 import numpy as np
 from sklearn.utils import class_weight
-import matplotlib
-import matplotlib.pyplot as plt
+import matplotlib as plt
 matplotlib.use('Agg')
 from keras.optimizers import Adam
 import os
@@ -82,7 +81,7 @@ model.add(Flatten())
 # model.add(Dense(72))
 # model.add(BatchNormalization())
 model.add(Activation('relu'))
-# model.add(Dropout(0.248))
+model.add(Dropout(0.5))
 model.add(Dense(15, activation='softmax'))
 
 # Show a summary of the model. Check the number of trainable parameters
@@ -139,7 +138,12 @@ history = model.fit_generator(
     verbose=1,
     callbacks=[tensorboard,checkpoint])
 
-
+model_json = model.to_json()
+with open("output/{}.json".format(model_name), "w") as json_file:
+    json_file.write(model_json)
+# serialize weights to HDF5
+model.save_weights("output/{}.h5".format(model_name))
+print("Saved model to disk")
 
 
 #metrics
@@ -160,14 +164,6 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 fig.savefig('output/history_{}.png'.format(model_name))
-
-model_json = model.to_json()
-with open("output/{}.json".format(model_name), "w") as json_file:
-    json_file.write(model_json)
-# serialize weights to HDF5
-model.save_weights("output/{}.h5".format(model_name))
-print("Saved model to disk")
-
 
 
 prediction = model.predict_generator(validation_generator,
