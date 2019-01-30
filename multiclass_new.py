@@ -10,6 +10,7 @@ from keras import backend as K
 from tensorflow.python.client import device_lib
 import numpy as np
 from sklearn.utils import class_weight
+import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use('Agg')
 from keras.optimizers import Adam
