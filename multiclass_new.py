@@ -11,7 +11,7 @@ from tensorflow.python.client import device_lib
 import numpy as np
 from sklearn.utils import class_weight
 import matplotlib as plt
-matplotlib.use('Agg')
+plt.use('Agg')
 from keras.optimizers import Adam
 import os
 from itertools import chain
