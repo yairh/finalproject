@@ -1,6 +1,6 @@
 from class_dataset import ChestDataset
 import pandas as pd
-from keras.callbacks import TensorBoard, ModelCheckpoint
+from keras.callbacks import TensorBoard, ModelCheckpoint,ReduceLROnPlateau
 from keras.layers import Dense, Activation, Conv2D, MaxPool2D, Flatten, BatchNormalization, Dropout
 from keras.preprocessing.image import ImageDataGenerator
 from keras import applications
@@ -16,11 +16,17 @@ from keras.optimizers import Adam
 import os
 from glob import glob
 from sklearn.metrics import roc_curve,auc, classification_report, accuracy_score, precision_recall_curve
+import cv2
+from sklearn.utils import shuffle
 
 print(device_lib.list_local_devices())
 print(K.tensorflow_backend._get_available_gpus())
 os.system('sudo chown -R ds:ds /data')
-os.mkdir('output')
+
+if not os.path.exists('/home/ds/notebooks/output'):
+    os.mkdir('output')
+    
+
 
 # CHOOSE now your model name 
 model_name = 'densechest_infilt'
@@ -35,14 +41,38 @@ ChestDataset(data_dir,df).reset_folder()
 df = ChestDataset(data_dir,df).reader
 df = df[df.exists == True]
 
-train_path = './output/densechest_infilt_train_list.txt'
-test_path = './output/densechest_infilt_test_list.txt'
-with open(train_path,'r') as f:
-    train_list = f.read().split('\n')
+# train_path = './output/densechest_infilt_train_list.txt'
+# test_path = './output/densechest_infilt_test_list.txt'
+# with open(train_path,'r') as f:
+#     train_list = f.read().split('\n')
 
-with open(test_path,'r') as f:
-    test_list = f.read().split('\n')
-    
+# with open(test_path,'r') as f:
+#     test_list = f.read().split('\n')
+
+filt = ['No Finding','Infiltration']
+# df = df[df['Finding Labels'].isin(filt)]
+
+min_count = np.min(df[df['Finding Labels'].isin(filt)].value_counts())
+# df = df.groupby('Finding Labels',group_keys=False).apply(lambda df: df.sample(min_count))
+
+df = df[df['Finding Labels'] == 'No Finding'].sample(min_count + int(0.2*min_count))
+
+df = df.append(df[df['Finding Labels'] == filt[1]].sample(min_count)
+
+df = shuffle(df)
+dataset = ChestDataset(data_dir,df)
+
+train_list = [el[len(data_dir):] for i,el in enumerate(dataset.image_path) if not i%5 == 0]
+test_list = [el[len(data_dir):] for i,el in enumerate(dataset.image_path) if i%5 == 0]
+               
+with open('output/{}_train_list.txt'.format(model_name), 'w') as f:
+    for item in train_list:
+        f.write("%s\n" % item)
+
+with open('output/{}_test_list.txt'.format(model_name), 'w') as f:
+    for item in test_list:
+        f.write("%s\n" % item)
+               
 dataset = ChestDataset(data_dir,df)
 
 train_dt,test_dt = dataset.train_test(train_list,test_list)
@@ -55,6 +85,23 @@ train_folder = train_dt.dir
 test_folder = test_dt.dir
 
 
+def stdize(img):
+    means = np.array([0.485, 0.456, 0.406])
+    stds = np.array([0.229, 0.224, 0.225])
+    for i in range(img.shape[2]):
+        img[:,:,i] = (img[:,:,i] - means[i])/stds[i]
+    return img
+               
+def equalize(img):
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
+    img = clahe.apply(img)
+    return img
+
+def prep(img):
+    img = equalize(img)
+    img = stdize(img)
+    return img
+               
 # ADD YOUR MODEL
 img_width,img_height = 256,256
 densenet = DenseNet121(weights='imagenet', include_top=False,input_shape = (img_width, img_height, 3))
@@ -72,8 +119,8 @@ model.add(densenet)
 model.add(Flatten())
 # model.add(Dense(72))
 # model.add(BatchNormalization())
-# model.add(Activation('relu'))
-# model.add(Dropout(0.248))
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
 model.add(Dense(1, activation='sigmoid'))
 
 # Show a summary of the model. Check the number of trainable parameters
@@ -81,16 +128,13 @@ model.summary()
 
 train_datagen = ImageDataGenerator(rescale=1./255,
                                    shear_range=0.2,
-                                  zoom_range=0.2,
-                                  rotation_range=20,
-                                  width_shift_range=0.2,
-                                  height_shift_range=0.2,
-                                  horizontal_flip=True)
+                                  horizontal_flip=True,
+                                  preprocessing_function=stdize)
 
 validation_datagen = ImageDataGenerator(rescale=1./255)
 
-train_batchsize = 10
-val_batchsize = 10
+train_batchsize = 16
+val_batchsize = 16
 
 train_generator = train_datagen.flow_from_directory(
     train_folder,
@@ -108,33 +152,37 @@ validation_generator = validation_datagen.flow_from_directory(
 
 # Compile the model
 
-optimizer = Adam()
+optimizer = Adam(lr=0.001)
 model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['acc'])
-weight_path = './output/checkpoint_densechest_infilt.hdf5'
-try: 
-    model.load_weights(weight_path)
-except:
-    pass
+# weight_path = '/home/ds/notebooks/output/checkpoint_densechest_infilt.hdf5'
+# try: 
+#     model.load_weights(weight_path)
+# except Exception as e:
+#     print(e)
 
 tensorboard = TensorBoard(log_dir='output/logs', histogram_freq=0,
                           write_graph=True, write_images=False)
 filepath = "output/checkpoint_{}.hdf5".format(model_name)
 checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+lr_sc = ReduceLROnPlateau(monitor='val_loss',factor=0.1,patience=3,verbose=1)
 
-# Train the model
-history = model.fit_generator(
-    train_generator,
-    steps_per_epoch=len(train_generator),
-    epochs=100,
-    validation_data=validation_generator,
-    validation_steps=len(validation_generator),
-    verbose=1,
-    callbacks=[tensorboard,checkpoint])
 
 # serialize model to JSON
 model_json = model.to_json()
 with open("output/{}.json".format(model_name), "w") as json_file:
     json_file.write(model_json)
+
+# Train the model
+history = model.fit_generator(
+    train_generator,
+    steps_per_epoch=len(train_generator),
+    epochs=150,
+    validation_data=validation_generator,
+    validation_steps=len(validation_generator),
+    verbose=1,
+    callbacks=[tensorboard,checkpoint,lr_sc])
+
+
 # serialize weights to HDF5
 model.save_weights("output/{}.h5".format(model_name))
 print("Saved model to disk")
