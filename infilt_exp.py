@@ -129,7 +129,7 @@ model.summary()
 train_datagen = ImageDataGenerator(rescale=1./255,
                                    shear_range=0.2,
                                   horizontal_flip=True,
-                                  preprocessing_function=stdize)
+                                  preprocessing_function=prep)
 
 validation_datagen = ImageDataGenerator(rescale=1./255)
 
