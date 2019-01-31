@@ -35,8 +35,8 @@ ChestDataset(data_dir,df).reset_folder()
 df = ChestDataset(data_dir,df).reader
 df = df[df.exists == True]
 
-train_path = 'output/densechest_infilt_train_list.txt'
-test_path = 'output/densechest_infilt_test_list.txt'
+train_path = './output/densechest_infilt_train_list.txt'
+test_path = './output/densechest_infilt_test_list.txt'
 with open(train_path,'r') as f:
     train_list = f.read().split('\n')
 
@@ -110,7 +110,7 @@ validation_generator = validation_datagen.flow_from_directory(
 
 optimizer = Adam()
 model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['acc'])
-weight_path = 'output/checkpoint_densechest_infilt.hdf5'
+weight_path = './output/checkpoint_densechest_infilt.hdf5'
 try: 
     model.load_weights(weight_path)
 except:
